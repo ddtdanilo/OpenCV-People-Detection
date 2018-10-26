@@ -1,6 +1,4 @@
 # import the necessary packages
-from picamera.array import PiRGBArray
-from picamera import PiCamera
 import imutils
 import time
 import cv2
@@ -8,14 +6,22 @@ import requests
 from time import sleep
 
 # initialize the camera and grab a reference to the raw camera capture
-camera = PiCamera()
-#res_x = 640
-#res_y = 480
+#camera = PiCamera()
+#res_x = 480
+#res_y = 360
+camera = cv2.VideoCapture(0)
+camera.set(3,480)
+
+camera.set(4,360)
+
+time.sleep(2)
+
+camera.set(15, -8.0)
 
 
-camera.resolution = (640,480)
-camera.framerate = 15
-rawCapture = PiRGBArray(camera, size=(640,480))
+#camera.resolution = (640,480)
+#camera.framerate = 15
+#rawCapture = PiRGBArray(camera, size=(640,480))
 face_cascade = cv2.CascadeClassifier('models/haarcascade_frontalface_alt.xml')
  
 MODEL_MEAN_VALUES = (78.4263377603, 87.7689143744, 114.895847746)
@@ -69,10 +75,12 @@ def capture_loop(age_net, gender_net,emotion_model):
     font = cv2.FONT_HERSHEY_SIMPLEX
     # capture frames from the camera
     flag =""
-    for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
+    while True:
         # grab the raw NumPy array representing the image, then initialize the timestamp
         # and occupied/unoccupied text
-        image = frame.array
+        ret_val, image = camera.read()
+        
+        #image = frame.array
         #/usr/local/share/OpenCV/haarcascades/
         gray = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
         #faces = face_cascade.detectMultiScale(gray, 1.1, 5)
@@ -120,14 +128,19 @@ def capture_loop(age_net, gender_net,emotion_model):
             #cv2.putText(image, overlay_text ,(x,y), font, 1,(255,255,255),1,cv2.LINE_AA)
 
         cv2.imshow("Image", image) # comentar si no se quiere que salga el frame
-        sleep(0.25)
+        #sleep(0.25)
         key = cv2.waitKey(1) & 0xFF
         # clear the stream in preparation for the next frame
-        rawCapture.truncate(0)
+        #rawCapture.truncate(0)
         # if the `q` key was pressed, break from the loop
         if key == ord("q"):
             break
+    
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
 
+    camera.release()
+    cv2.destroyAllWindows()
 if __name__ == '__main__':
     age_net, gender_net = initialize_caffe_model()
     fisher_face_emotions = cv2.face.FisherFaceRecognizer_create()
